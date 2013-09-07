@@ -67,6 +67,22 @@ void CDBOConv::create() {
 	}
 }
 
+void CDBOConv::saveto(std::string path) {
+	std::string oformat = path.substr(path.find_last_of("."),path.size()-path.find_last_of("."));
+	bool _known = false;
+	
+	if(oformat == ".dae") {
+		_known = true;
+
+		//save it
+
+	}
+
+	if(_known == false) {
+		std::cout << " > saving: " << oformat << " is unknown" << std::endl;
+	}
+}
+
 void CDBOConv::getAnimationData() {
 	std::cout << "  > reading one animation data" << std::endl;
 	DWORD dwCode = this->getDWORD();
@@ -608,7 +624,7 @@ std::string CDBOConv::getString(unsigned int size) {
 
 void CDBOConv::skipData(unsigned int size) {
 	for(unsigned int n = 0; n < size; n++) {
-		char c[128];
+		char c[1];
 		file.read(c, 1);
 	}
 }

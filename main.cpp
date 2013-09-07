@@ -12,21 +12,20 @@
 
 #include <stdio.h>
 #include <iostream>
-#include <vector>
 
 #include "CDBOConv.h"
 
-int main(void) {
-	
-	CDBOConv *dboFile = new CDBOConv("object.dbo");
+int main(int argc,char *argv[]) {
+	CDBOConv *dboFile = new CDBOConv(std::string(argv[1]));
 	if(!dboFile->good()) {
-		std::cout << "Error loading dboFile." << std::endl;
+		std::cout << "> loading: " << argv[1] << " could not be found" << std::endl;
 	} else {
 		dboFile->create();
+		dboFile->saveto(std::string(argv[2]));
 	}
 
 	dboFile->clean();
-	std::cin.get();
+	std::cin.get(); // just so it 
 	
 	return 0;
 }

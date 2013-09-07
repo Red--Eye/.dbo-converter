@@ -10,9 +10,6 @@
 //
 // *************************************************************************************************
 
-#ifndef CREAD_H
-#define CREAD_H
-
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -230,6 +227,7 @@ public:
 	//core
 	void create();
 	void clean();
+	void saveto(std::string path);
 
 	//blocks funcs
 	void getRootFrame();
