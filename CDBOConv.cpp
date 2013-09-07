@@ -599,9 +599,7 @@ void CDBOConv::clean() {
 bool CDBOConv::open(std::string path) {
 	file.open((char*)path.c_str(), std::ios::in|std::ios::binary);
 
-	if( file.is_open() == true ) {
-		return true;
-	} else { return false; }
+	return file.is_open();
 }
 
 bool CDBOConv::good() {

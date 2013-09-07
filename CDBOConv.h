@@ -224,13 +224,14 @@ public:
 	bool open(std::string path);
 	bool good();
 
-	//core
 	void create();
 	void clean();
 	void saveto(std::string path);
-
-	//blocks funcs
-	void getRootFrame();
+private:
+	std::ifstream file;
+	dbObject::object *obj;
+	
+	void getRootFrame(); // pretty much the same as geting a frame > starting point
 	void getAnimation();
 	void getAnimationData();
 	void getMesh(dbObject::sMeshData *m);
@@ -240,7 +241,6 @@ public:
 	dbObject::sMaterial getMaterial();
 	dbObject::sMultipleMaterial getMMaterial();
 
-	//reading funcs
 	void skipData(unsigned int);
 	std::string getString(unsigned int);
 	float getFloat();
@@ -248,9 +248,6 @@ public:
 	WORD getWORD();
 	int getInteger();
 	bool getBOOL();
-private:
-	std::ifstream file;
-	dbObject::object *obj;
 };
 
 #endif
