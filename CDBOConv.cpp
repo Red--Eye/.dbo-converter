@@ -20,7 +20,7 @@ CDBOConv::~CDBOConv() {
 
 }
 
-CDBOConv::CDBOConv(string path) {
+CDBOConv::CDBOConv(std::string path) {
 	std::cout << "* opening " << path << " *" << std::endl;
 	open(path);
 }
@@ -54,11 +54,11 @@ void CDBOConv::create() {
 			this->skipData(dwCodeSize);
 				  }break;
 		case 0: {
-			std::cout << "* unkown error occured, file corrupted *" << endl;
+			std::cout << "* unkown error occured, file corrupted *" << std::endl;
 			this->skipData(dwCodeSize);
 				}break;
 		default: {
-			std::cout << "* unkown data, skipping data *" << endl;
+			std::cout << "* unkown data, skipping data *" << std::endl;
 			this->skipData(dwCodeSize);
 				 }break;
 		}
@@ -68,7 +68,7 @@ void CDBOConv::create() {
 }
 
 void CDBOConv::getAnimationData() {
-	std::cout << "  > reading one animation data" << endl;
+	std::cout << "  > reading one animation data" << std::endl;
 	DWORD dwCode = this->getDWORD();
 	int dwCodeSize = this->getDWORD();
 	if(dwCode == 0) { this->skipData(dwCodeSize); }
@@ -154,7 +154,7 @@ void CDBOConv::getAnimationData() {
 }
 
 void CDBOConv::getAnimation() {
-	std::cout << " > reading animation " << endl;
+	std::cout << " > reading animation " << std::endl;
 	DWORD dwCode = this->getDWORD();
 	int dwCodeSize = this->getDWORD();
 	if(dwCode == 0) { this->skipData(dwCodeSize); }
@@ -177,7 +177,7 @@ void CDBOConv::getAnimation() {
 }
 
 dbObject::sBoneData CDBOConv::getBoneData() {
-	std::cout << "   > reading a bone" <<  endl;
+	std::cout << "   > reading a bone" <<  std::endl;
 	dbObject::sBoneData bone; bone._tSize = 8;
 	DWORD dwCode = this->getDWORD();
 	int dwCodeSize = this->getDWORD();
@@ -215,7 +215,7 @@ dbObject::sBoneData CDBOConv::getBoneData() {
 }
 
 dbObject::sTexture CDBOConv::getTextureData() {
-	std::cout << "   > reading a texture" <<  endl;
+	std::cout << "   > reading a texture" <<  std::endl;
 	dbObject::sTexture tex; tex._tSize = 8;
 	DWORD dwCode = this->getDWORD();
 	int dwCodeSize = this->getDWORD();
@@ -250,7 +250,7 @@ dbObject::sTexture CDBOConv::getTextureData() {
 }
 
 dbObject::sMaterial CDBOConv::getMaterial() {
-	std::cout << "   > reading a material" <<  endl;
+	std::cout << "   > reading a material" <<  std::endl;
 	dbObject::sMaterial mat;
 	for(int d=0; d<4; d++) {mat.diffuse[d] = this->getFloat();}
 	for(int a=0; a<4; a++) {mat.ambient[a] = this->getFloat();}
@@ -260,7 +260,7 @@ dbObject::sMaterial CDBOConv::getMaterial() {
 }
 
 dbObject::sMultipleMaterial CDBOConv::getMMaterial() {
-	std::cout << "  > reading a multiple material" <<  endl;
+	std::cout << "  > reading a multiple material" <<  std::endl;
 	dbObject::sMultipleMaterial mat;
 	DWORD dwCode = this->getDWORD();
 	int dwCodeSize = this->getDWORD();
@@ -293,7 +293,7 @@ dbObject::sMultipleMaterial CDBOConv::getMMaterial() {
 }
 
 void CDBOConv::getMesh(dbObject::sMeshData *m) {
-	std::cout << "  > reading a mesh" <<  endl;
+	std::cout << "  > reading a mesh" <<  std::endl;
 	DWORD dwCode = this->getDWORD();
 	int dwCodeSize = this->getDWORD();
 	while(dwCode > 0) {
@@ -462,7 +462,7 @@ void CDBOConv::getMesh(dbObject::sMeshData *m) {
 }
 
 void CDBOConv::getFrame(dbObject::sFrame *frame) {
-	std::cout << "  > reading a frame" <<  endl;
+	std::cout << "  > reading a frame" <<  std::endl;
 	int dwCode = this->getDWORD();
 	int dwCodeSize = this->getDWORD();
 	while( dwCode > 0 ) {
@@ -518,7 +518,7 @@ void CDBOConv::getFrame(dbObject::sFrame *frame) {
 }
 
 void CDBOConv::getRootFrame() {
-	std::cout << " > reading root " << endl;
+	std::cout << " > reading root " << std::endl;
 	int dwCode = this->getDWORD();
 	int dwCodeSize = this->getDWORD();
 	obj->root = new dbObject::sFrame();
@@ -581,7 +581,7 @@ void CDBOConv::clean() {
 }
 
 bool CDBOConv::open(std::string path) {
-	file.open((char*)path.c_str(), ios::in|ios::binary);
+	file.open((char*)path.c_str(), std::ios::in|std::ios::binary);
 
 	if( file.is_open() == true ) {
 		return true;
@@ -592,18 +592,18 @@ bool CDBOConv::good() {
 	return file.is_open();
 }
 
-string CDBOConv::getString(unsigned int size) {
-	string buffer;
+std::string CDBOConv::getString(unsigned int size) {
+	std::string buffer;
 	for(unsigned int n = 0; n < size; n++) {
-		char c[128];
+		char c[1];
 		file.read(c, 1);
-		if(string(c).size() > 0) {
-			buffer.push_back(string(c).substr(0,1).at(0));
+		if(std::string(c).size() > 0) {
+			buffer.push_back(std::string(c).substr(0,1).at(0));
 		} else {
 			buffer.push_back((char)" ");
 		}
 	}
-	return string(buffer).substr(0,size);
+	return std::string(buffer).substr(0,size);
 }
 
 void CDBOConv::skipData(unsigned int size) {

@@ -14,18 +14,17 @@
 #define CREAD_H
 
 #include <fstream>
-#include <string>
 #include <iostream>
-#include <vector>
 #include <sstream>
-
-using namespace std;
+#include <string>
+#include <vector>
 
 typedef unsigned long DWORD;
+typedef unsigned short WORD;
 
 namespace dbObject {
 	struct sHeader {
-		string pszString;
+		std::string pszString;
 		DWORD dwVersion;
 		DWORD dwReserved1;
 		DWORD dwReserved2;
@@ -55,21 +54,21 @@ namespace dbObject {
 	};
 
 	struct sAnimationData {
-		string name;
+		std::string name;
 		DWORD positionkeys;
-		vector<sAnimationPos> kPos;
+		std::vector<sAnimationPos> kPos;
 		DWORD rotationkeys;
-		vector<sAnimationRot> kRot;
+		std::vector<sAnimationRot> kRot;
 		DWORD scalekeys;
-		vector<sAnimationScale> kScale;
+		std::vector<sAnimationScale> kScale;
 		DWORD matrixkeys;
-		vector<sAnimationMatrix> kMatrix;
+		std::vector<sAnimationMatrix> kMatrix;
 	};
 
 	struct sAnimation { 
-		string name;
+		std::string name;
 		DWORD length;
-		vector<sAnimationData> data;
+		std::vector<sAnimationData> data;
 	};
 
 	struct sVertexData {
@@ -85,7 +84,7 @@ namespace dbObject {
 	};
 
 	struct sMultipleMaterial {
-		string name;
+		std::string name;
 		sMaterial mat;
 		DWORD start;
 		DWORD count;
@@ -94,7 +93,7 @@ namespace dbObject {
 
 	struct sTexture {
 		unsigned int _tSize;
-		string name;
+		std::string name;
 		DWORD stage;
 		DWORD blendmode;
 		DWORD argument1;
@@ -111,10 +110,10 @@ namespace dbObject {
 
 	struct sBoneData {
 		unsigned int _tSize;
-		string name;
+		std::string name;
 		DWORD NumInfluences;
-		vector<DWORD> VertexList;
-		vector<float> WeightList;
+		std::vector<DWORD> VertexList;
+		std::vector<float> WeightList;
 		float tMatrix[4][4];
 	};
 
@@ -141,8 +140,8 @@ namespace dbObject {
 		DWORD VertexCount;
 		DWORD IndexCount;
 		
-		vector<sVertexData> VertexData;
-		vector<int> IndexData;
+		std::vector<sVertexData> VertexData;
+		std::vector<int> IndexData;
 
 		DWORD pType;
 		/*
@@ -160,13 +159,13 @@ namespace dbObject {
 		//Mesh Vertex Declaration
 
 		DWORD BoneCount;
-		vector<sBoneData> bone;
+		std::vector<sBoneData> bone;
 		
 		bool bUseMaterial;
 		sMaterial mat;
 
 		DWORD TextureCount;
-		vector<sTexture> texture;
+		std::vector<sTexture> texture;
 		
 		bool bWireframe;
 		
@@ -181,7 +180,7 @@ namespace dbObject {
 		//Mesh Linked ( internal – skip this block )
 		//Mesh Sub Frames ( internal – skip this block )
 
-		string effectname;
+		std::string effectname;
 		DWORD AbitaryValue;
 		bool ZBiasFlag;
 		DWORD ZBiasSlope;
@@ -192,13 +191,13 @@ namespace dbObject {
 
 		bool bUseMultipleMaterials;
 		DWORD MaterialCount;
-		vector<sMultipleMaterial> mmaterial;
+		std::vector<sMultipleMaterial> mmaterial;
 
 		bool bVisible;
 	};
 
 	struct sFrame {
-		string name;
+		std::string name;
 		float matrix[4][4];
 		sMeshData *m;
 		sFrame *child;
@@ -212,7 +211,7 @@ namespace dbObject {
 		unsigned int _tAnims;
 		sHeader head;
 		sFrame *root;
-		vector<sAnimation> anim;
+		std::vector<sAnimation> anim;
 
 		object() {
 			this->_tAnims = 0;
@@ -220,14 +219,12 @@ namespace dbObject {
 	};
 }
 
-typedef unsigned short WORD;
-
 class CDBOConv {
 public:
 	CDBOConv();
-	CDBOConv(string path);
+	CDBOConv(std::string path);
 	~CDBOConv();
-	bool open(string path);
+	bool open(std::string path);
 	bool good();
 
 	//core
@@ -247,14 +244,14 @@ public:
 
 	//reading funcs
 	void skipData(unsigned int);
-	string getString(unsigned int);
+	std::string getString(unsigned int);
 	float getFloat();
 	DWORD getDWORD();
 	WORD getWORD();
 	int getInteger();
 	bool getBOOL();
 private:
-	ifstream file;
+	std::ifstream file;
 	dbObject::object *obj;
 };
 
