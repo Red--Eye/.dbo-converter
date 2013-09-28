@@ -10,6 +10,9 @@
 //
 // *************************************************************************************************
 
+#ifndef CDBOCONV_H
+#define CDBOCONV_H
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -115,24 +118,12 @@ namespace dbObject {
 	};
 
 	struct sMeshData {
+		sMeshData() {
+			IndexCount = 0;
+			VertexCount = 0;
+		}
+
 		DWORD FVF;
-		/*
-		FVF_XYZ			0x002	float X, Y, Z positions
-		FVF_XYZRHW		0x004	float X, Y, Z transformed
-		FVF_NORMAL		0x010	float X, Y, Z normal vector
-		FVF_PSIZE		0x020	float point size for sprites
-		FVF_DIFFUSE		0x040	DWORD diffuse colour
-		FVF_SPECULAR	0x080	DWORD specular colour
-		FVF_TEX0		0x000	texture coordinates 0
-		FVF_TEX1		0x100	texture coordinates 1
-		FVF_TEX2		0x200	texture coordinates 2
-		FVF_TEX3		0x300	texture coordinates 3
-		FVF_TEX4		0x400	texture coordinates 4
-		FVF_TEX5		0x500	texture coordinates 5
-		FVF_TEX6		0x600	texture coordinates 6
-		FVF_TEX7		0x700	texture coordinates 7
-		FVF_TEX8		0x800	texture coordinates 8
-		*/
 		DWORD FVFSize;
 		DWORD VertexCount;
 		DWORD IndexCount;
@@ -141,15 +132,6 @@ namespace dbObject {
 		std::vector<int> IndexData;
 
 		DWORD pType;
-		/*
-		Type			Value	Information
-		POINTLIST		1		Point list – particles
-		LINELIST		2		Line list
-		LINESTRIP		3		Line strip
-		TRIANGLELIST	4		Triangle list
-		TRIANGLESTRIP	5		Triangle strip
-		TRIANGLEFAN		6		Triangle fan
-		*/
 		DWORD DrawVertexCount;
 		DWORD DrawPrimitiveCount;
 
@@ -199,19 +181,34 @@ namespace dbObject {
 		sMeshData *m;
 		sFrame *child;
 		sFrame *sibling;
-		float offset[3]; //size = 3*4 = 12
+		float offset[3];
 		float rot[3];
 		float scale[3];
+		bool bGood;
+
+		bool good() {
+			if(bGood == false || (m->IndexCount == 0 && m->VertexCount == 0) ) {
+				return false;
+			}
+			return true;
+		}
+
+		sFrame() {
+			bGood = false;
+			m  = NULL;
+			child = sibling = NULL;
+		}
 	};
 	
 	struct object {
-		unsigned int _tAnims;
+		unsigned int _cAnims, _cFrames;
 		sHeader head;
 		sFrame *root;
+		sFrame *oFrame;
 		std::vector<sAnimation> anim;
 
 		object() {
-			this->_tAnims = 0;
+			_cAnims = 0, _cFrames = 0;
 		}
 	};
 }
@@ -227,27 +224,45 @@ public:
 	void create();
 	void clean();
 	void saveto(std::string path);
+	dbObject::object *getObj();
 private:
 	std::ifstream file;
 	dbObject::object *obj;
-	
-	void getRootFrame(); // pretty much the same as geting a frame > starting point
+
 	void getAnimation();
 	void getAnimationData();
 	void getMesh(dbObject::sMeshData *m);
-	void getFrame(dbObject::sFrame *frame);
+	void getFrame();
 	dbObject::sBoneData getBoneData();
 	dbObject::sTexture getTextureData();
 	dbObject::sMaterial getMaterial();
 	dbObject::sMultipleMaterial getMMaterial();
 
-	void skipData(unsigned int);
-	std::string getString(unsigned int);
-	float getFloat();
-	DWORD getDWORD();
-	WORD getWORD();
-	int getInteger();
-	bool getBOOL();
+	void			readDATA(unsigned int);
+	std::string		readSTRING(unsigned int);
+	float			readFLOAT();
+	DWORD			readDWORD();
+	WORD			readWORD();
+	int				readINTEGER();
+	bool			readBOOL();
 };
+
+//.irrmesh Output Class Declaration
+namespace nsIrrMesh {
+	class CIrrMesh {
+	public:
+		CIrrMesh(CDBOConv*, std::string);
+		void addBuffer(dbObject::sFrame*);
+		void setMeshVersion(std::string, std::string);
+		void addEnd(std::string);
+		void setBoundingBox(float[],float[]);
+		bool ready();
+		void init();
+		unsigned int getBufferCount();
+	private:
+		CDBOConv* src;
+		std::ofstream ofile;
+	};
+}
 
 #endif

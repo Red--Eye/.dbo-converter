@@ -12,10 +12,6 @@
 
 #include "CDBOConv.h"
 
-CDBOConv::CDBOConv() {
-	
-}
-
 CDBOConv::~CDBOConv() {
 
 }
@@ -27,205 +23,194 @@ CDBOConv::CDBOConv(std::string path) {
 
 void CDBOConv::create() {
 	std::cout << "* loading object *" << std::endl;
-	obj = new dbObject::object;
+
+	this->obj = new dbObject::object();
 
 	//Header Information
-	obj->head.pszString = this->getString(this->getDWORD());
-	obj->head.dwVersion = this->getDWORD();
-	obj->head.dwReserved1 = this->getDWORD();
-	obj->head.dwReserved2 = this->getDWORD();
+	this->obj->head.pszString = this->readSTRING(this->readDWORD());
+	this->obj->head.dwVersion = this->readDWORD();
+	this->obj->head.dwReserved1 = this->readDWORD();
+	this->obj->head.dwReserved2 = this->readDWORD();
 
-	std::cout << "> header info, " << "version = " << obj->head.dwVersion << std::endl;
+	std::cout << "> header info, " << "version = " << this->obj->head.dwVersion << std::endl;
 
 	//Data Blocks
 	std::cout << "> reading data blocks" << std::endl;
-	DWORD dwCode = this->getDWORD();
-	int dwCodeSize = this->getDWORD();
+	DWORD dwCode = this->readDWORD();
+	int dwCodeSize = this->readDWORD();
 	while(dwCode > 0) {
 		switch(dwCode) {
-		case 1: {
-			this->getRootFrame();
+		case 1: { //root
+			this->obj->root = new dbObject::sFrame();
+			this->obj->oFrame = this->obj->root;
+			this->getFrame();
 				}break;
 		case 2: {
-			obj->_tAnims++; obj->anim.resize(obj->_tAnims);
+			this->obj->_cAnims++; this->obj->anim.resize(this->obj->_cAnims);
 			this->getAnimation();
 				}break;
-		case 406: { // custom data (currently skipping it)
-			this->skipData(dwCodeSize);
+		case 406: {
+			this->readDATA(dwCodeSize);
 				  }break;
 		case 0: {
 			std::cout << "* unkown error occured, file corrupted *" << std::endl;
-			this->skipData(dwCodeSize);
+			this->readDATA(dwCodeSize);
 				}break;
 		default: {
 			std::cout << "* unkown data, skipping data *" << std::endl;
-			this->skipData(dwCodeSize);
+			this->readDATA(dwCodeSize);
 				 }break;
 		}
-		dwCode = this->getDWORD();
-		dwCodeSize = this->getDWORD();
-	}
-}
-
-void CDBOConv::saveto(std::string path) {
-	std::string oformat = path.substr(path.find_last_of("."),path.size()-path.find_last_of("."));
-	bool _known = false;
-	
-	if(oformat == ".dae") {
-		_known = true;
-
-		//save it
-
+		dwCode = this->readDWORD();
+		dwCodeSize = this->readDWORD();
 	}
 
-	if(_known == false) {
-		std::cout << " > saving: " << oformat << " is unknown" << std::endl;
-	}
+	std::cout << " > extra info: anim count: " << this->obj->anim.size() << " frame count: " << this->obj->_cFrames << std::endl;
 }
 
 void CDBOConv::getAnimationData() {
 	std::cout << "  > reading one animation data" << std::endl;
-	DWORD dwCode = this->getDWORD();
-	int dwCodeSize = this->getDWORD();
-	if(dwCode == 0) { this->skipData(dwCodeSize); }
+	DWORD dwCode = this->readDWORD();
+	int dwCodeSize = this->readDWORD();
+	if(dwCode == 0) { this->readDATA(dwCodeSize); }
 	dbObject::sAnimationData _data;
 	while(dwCode > 0) {
 		switch(dwCode) {
 		case 211: {
-			_data.name = this->getString(this->getDWORD());
+			_data.name = this->readSTRING(this->readDWORD());
 				  }break;
 		case 212: {
-			_data.positionkeys = this->getDWORD();
+			_data.positionkeys = this->readDWORD();
 				  }break;
 		case 213: {
 			for(unsigned int p=0; p<_data.positionkeys; p++) {
 				dbObject::sAnimationPos pos;
-				pos.time = this->getDWORD();
-				pos.position[0] = this->getFloat();
-				pos.position[1] = this->getFloat();
-				pos.position[2] = this->getFloat();
-				pos.interpolation[0] = this->getFloat();
-				pos.interpolation[1] = this->getFloat();
-				pos.interpolation[2] = this->getFloat();
+				pos.time = this->readDWORD();
+				pos.position[0] = this->readFLOAT();
+				pos.position[1] = this->readFLOAT();
+				pos.position[2] = this->readFLOAT();
+				pos.interpolation[0] = this->readFLOAT();
+				pos.interpolation[1] = this->readFLOAT();
+				pos.interpolation[2] = this->readFLOAT();
 				_data.kPos.push_back(pos);
 			}
 				  }break;
 		case 214: {
-			_data.rotationkeys = this->getDWORD();
+			_data.rotationkeys = this->readDWORD();
 				  }break;
 		case 215: {
 			for(unsigned int r=0; r<_data.rotationkeys; r++) {
 				dbObject::sAnimationRot rot;
-				rot.time = this->getDWORD();
-				rot.rotation[0] = this->getFloat();
-				rot.rotation[1] = this->getFloat();
-				rot.rotation[2] = this->getFloat();
+				rot.time = this->readDWORD();
+				rot.rotation[0] = this->readFLOAT();
+				rot.rotation[1] = this->readFLOAT();
+				rot.rotation[2] = this->readFLOAT();
 				_data.kRot.push_back(rot);
 			}
 				  }break;
 		case 216:{
-			_data.scalekeys = this->getDWORD();
+			_data.scalekeys = this->readDWORD();
 				 }break;
 		case 217: {
 			for(unsigned int s=0; s<_data.scalekeys; s++) {
 				dbObject::sAnimationScale scale;
-				scale.time = this->getDWORD();
-				scale.scale[0] = this->getFloat();
-				scale.scale[1] = this->getFloat();
-				scale.scale[2] = this->getFloat();
+				scale.time = this->readDWORD();
+				scale.scale[0] = this->readFLOAT();
+				scale.scale[1] = this->readFLOAT();
+				scale.scale[2] = this->readFLOAT();
 				_data.kScale.push_back(scale);
 			}
 				  }break;
 		case 218: {
-			_data.matrixkeys = this->getDWORD();
+			_data.matrixkeys = this->readDWORD();
 				  }break;
 		case 219: {
 			for(unsigned int m=0; m<_data.matrixkeys; m++) {
 				dbObject::sAnimationMatrix matrix;
-				matrix.time = this->getDWORD();
+				matrix.time = this->readDWORD();
 				for(int x=0; x<4; x++) {
 					for(int y=0; y<4; y++) {
-						matrix.matrix[x][y] = this->getFloat();
+						matrix.matrix[x][y] = this->readFLOAT();
 					}
 				}
 				for(int x=0; x<4; x++) {
 					for(int y=0; y<4; y++) {
-						matrix.interpolation[x][y] = this->getFloat();
+						matrix.interpolation[x][y] = this->readFLOAT();
 					}
 				}
 				_data.kMatrix.push_back(matrix);
 			}
 				  }break;
 		case 220: {
-			obj->anim[obj->_tAnims-1].data.push_back(_data);
+			this->obj->anim[this->obj->_cAnims-1].data.push_back(_data);
 			this->getAnimationData();
 				  }break;
 		default: {
-			this->skipData(dwCodeSize);
+			this->readDATA(dwCodeSize);
 				 }break;
 		}
-		dwCode = this->getDWORD();
-		dwCodeSize = this->getDWORD();
+		dwCode = this->readDWORD();
+		dwCodeSize = this->readDWORD();
 	}
 }
 
 void CDBOConv::getAnimation() {
 	std::cout << " > reading animation " << std::endl;
-	DWORD dwCode = this->getDWORD();
-	int dwCodeSize = this->getDWORD();
-	if(dwCode == 0) { this->skipData(dwCodeSize); }
+	DWORD dwCode = this->readDWORD();
+	int dwCodeSize = this->readDWORD();
+	if(dwCode == 0) { this->readDATA(dwCodeSize); }
 
 	while(dwCode > 0) {
 		switch(dwCode) {
 		case 201: {
-			obj->anim[obj->_tAnims-1].name = this->getString(this->getDWORD());
+			this->obj->anim[this->obj->_cAnims-1].name = this->readSTRING(this->readDWORD());
 				  }break;
 		case 202: {
-			obj->anim[obj->_tAnims-1].length = this->getDWORD();
+			this->obj->anim[this->obj->_cAnims-1].length = this->readDWORD();
 				  }break;
 		case 203: {
 			this->getAnimationData();
 				  }break;
 		}
-		dwCode = this->getDWORD();
-		dwCodeSize = this->getDWORD();
+		dwCode = this->readDWORD();
+		dwCodeSize = this->readDWORD();
 	}
 }
 
 dbObject::sBoneData CDBOConv::getBoneData() {
 	std::cout << "   > reading a bone" <<  std::endl;
 	dbObject::sBoneData bone; bone._tSize = 8;
-	DWORD dwCode = this->getDWORD();
-	int dwCodeSize = this->getDWORD();
+	DWORD dwCode = this->readDWORD();
+	int dwCodeSize = this->readDWORD();
 	while(dwCode > 0) {
 		switch(dwCode) {
 		case 301:{
-			bone.name = this->getString(this->getDWORD());
+			bone.name = this->readSTRING(this->readDWORD());
 				 }break;
 		case 302:{
-			bone.NumInfluences = this->getDWORD();
+			bone.NumInfluences = this->readDWORD();
 				 }break;
 		case 303:{
 			for(unsigned int n=0; n<bone.NumInfluences; n++) {
-				bone.VertexList.push_back(this->getDWORD());
+				bone.VertexList.push_back(this->readDWORD());
 			}
 				 }break;
 		case 304: {
 			for(unsigned int n=0; n<bone.NumInfluences; n++) {
-				bone.WeightList.push_back(this->getFloat());
+				bone.WeightList.push_back(this->readFLOAT());
 			}
 				  }break;
 		case 305: {
 			for(int x=0; x<4; x++) {
 				for(int y=0; y<4; y++) {
-					bone.tMatrix[x][y] = (float)this->getDWORD();
+					bone.tMatrix[x][y] = (float)this->readDWORD();
 				}
 			}
 				  }break;
 		}
 		bone._tSize += dwCodeSize + 8;
-		dwCode = this->getDWORD();
-		dwCodeSize = this->getDWORD();
+		dwCode = this->readDWORD();
+		dwCodeSize = this->readDWORD();
 	}
 	return bone;
 }
@@ -233,137 +218,136 @@ dbObject::sBoneData CDBOConv::getBoneData() {
 dbObject::sTexture CDBOConv::getTextureData() {
 	std::cout << "   > reading a texture" <<  std::endl;
 	dbObject::sTexture tex; tex._tSize = 8;
-	DWORD dwCode = this->getDWORD();
-	int dwCodeSize = this->getDWORD();
+	DWORD dwCode = this->readDWORD();
+	int dwCodeSize = this->readDWORD();
 	std::cout << "     {" << dwCode << ",";
 	while(dwCode > 0) {
 		switch(dwCode) {
-			case 141: {	tex.name = this->getString(this->getDWORD());  }break;
-			case 142: {	tex.stage = this->getDWORD();  }break;
-			case 143: {	tex.blendmode = this->getDWORD();  }break;
-			case 144: {	tex.argument1 = this->getDWORD();  }break;
-			case 145: {	tex.argument2 = this->getDWORD();  }break;
-			case 146: {	tex.AddressU = this->getDWORD();  }break;
-			case 147: {	tex.AddressV = this->getDWORD();  }break;
-			case 148: {	tex.mag = this->getDWORD();  }break;
-			case 149: {	tex.min = this->getDWORD();  }break;
-			case 150: {	tex.mip = this->getDWORD();  }break;
-			case 151: {	tex.TCMode = this->getDWORD();  }break;
-			case 152: {	tex.PrimitiveStart = this->getDWORD();  }break;
-			case 153: {	tex.PrimitiveCount = this->getDWORD();  }break;
-			default: { 
-				//skip data (dwCodeSize)
-				this->skipData(dwCodeSize);
+			case 141: {	tex.name = this->readSTRING(this->readDWORD());  }break;
+			case 142: {	tex.stage = this->readDWORD();  }break;
+			case 143: {	tex.blendmode = this->readDWORD();  }break;
+			case 144: {	tex.argument1 = this->readDWORD();  }break;
+			case 145: {	tex.argument2 = this->readDWORD();  }break;
+			case 146: {	tex.AddressU = this->readDWORD();  }break;
+			case 147: {	tex.AddressV = this->readDWORD();  }break;
+			case 148: {	tex.mag = this->readDWORD();  }break;
+			case 149: {	tex.min = this->readDWORD();  }break;
+			case 150: {	tex.mip = this->readDWORD();  }break;
+			case 151: {	tex.TCMode = this->readDWORD();  }break;
+			case 152: {	tex.PrimitiveStart = this->readDWORD();  }break;
+			case 153: {	tex.PrimitiveCount = this->readDWORD();  }break;
+			default: {
+				this->readDATA(dwCodeSize);
 					 }break;
 		}
 		std::cout << dwCode << ",";
 		tex._tSize = tex._tSize + dwCodeSize + 8;
-		dwCode = this->getDWORD();
-		dwCodeSize = this->getDWORD();
+		dwCode = this->readDWORD();
+		dwCodeSize = this->readDWORD();
 	}
 	std::cout << "_tSize:" << tex._tSize << "}" << std::endl;
 	return tex;
 }
 
 dbObject::sMaterial CDBOConv::getMaterial() {
-	std::cout << "   > reading a material" <<  std::endl;
 	dbObject::sMaterial mat;
-	for(int d=0; d<4; d++) {mat.diffuse[d] = this->getFloat();}
-	for(int a=0; a<4; a++) {mat.ambient[a] = this->getFloat();}
-	for(int s=0; s<4; s++) {mat.specular[s] = this->getFloat();}
-	for(int e=0; e<4; e++) {mat.emissive[e] = this->getFloat();}
+	std::cout << "   > reading a material" <<  std::endl;
+	for(int d=0; d<4; d++) { mat.diffuse[d] = this->readFLOAT(); }
+	for(int a=0; a<4; a++) { mat.ambient[a] = this->readFLOAT(); }
+	for(int s=0; s<4; s++) { mat.specular[s] = this->readFLOAT(); }
+	for(int e=0; e<4; e++) { mat.emissive[e] = this->readFLOAT(); }
 	return mat;
 }
 
 dbObject::sMultipleMaterial CDBOConv::getMMaterial() {
 	std::cout << "  > reading a multiple material" <<  std::endl;
 	dbObject::sMultipleMaterial mat;
-	DWORD dwCode = this->getDWORD();
-	int dwCodeSize = this->getDWORD();
+	DWORD dwCode = this->readDWORD();
+	int dwCodeSize = this->readDWORD();
 	while(dwCode > 0) {
 		switch(dwCode) {
 		case 161: {
-			mat.name = this->getString(this->getDWORD());
+			mat.name = this->readSTRING(this->readDWORD());
 				  };
 		case 162: {
 			mat.mat = this->getMaterial();
-			this->skipData(dwCodeSize-64);
+			this->readDATA(dwCodeSize-64);
 				  };
 		case 163: {
-			mat.start = this->getDWORD();
+			mat.start = this->readDWORD();
 				  };
 		case 164: {
-			mat.count = this->getDWORD();
+			mat.count = this->readDWORD();
 				  };
 		case 165: {
-			mat.polygon = this->getDWORD();
+			mat.polygon = this->readDWORD();
 				  };
 		default: {
-			this->skipData(dwCodeSize);
+			this->readDATA(dwCodeSize);
 				 }break;
 		}
-		dwCode = this->getDWORD();
-		dwCodeSize = this->getDWORD();
+		dwCode = this->readDWORD();
+		dwCodeSize = this->readDWORD();
 	}
 	return mat;
 }
 
 void CDBOConv::getMesh(dbObject::sMeshData *m) {
 	std::cout << "  > reading a mesh" <<  std::endl;
-	DWORD dwCode = this->getDWORD();
-	int dwCodeSize = this->getDWORD();
+	DWORD dwCode = this->readDWORD();
+	int dwCodeSize = this->readDWORD();
 	while(dwCode > 0) {
 		switch(dwCode) {
-			case 111: { // mesh fvf
-				m->FVF = this->getDWORD();
+			case 111: {
+				m->FVF = this->readDWORD();
 					  }break;
 			case 112: {
-				m->FVFSize = this->getDWORD();
+				m->FVFSize = this->readDWORD();
 					  }break;
 			case 113: {
-				m->VertexCount = this->getDWORD();
+				m->VertexCount = this->readDWORD();
 					  }break;
 			case 114: {
-				m->IndexCount = this->getDWORD();
+				m->IndexCount = this->readDWORD();
 					  }break;
 			case 115: {
 				for(unsigned int i=0; i<m->VertexCount; i++) {
 					dbObject::sVertexData data;
-					data.x = this->getFloat();
-					data.y = this->getFloat();
-					data.z = this->getFloat();
+					data.x = this->readFLOAT();
+					data.y = this->readFLOAT();
+					data.z = this->readFLOAT();
 					
-					data.nx = this->getFloat();
-					data.ny = this->getFloat();
-					data.nz = this->getFloat();
+					data.nx = this->readFLOAT();
+					data.ny = this->readFLOAT();
+					data.nz = this->readFLOAT();
 					
-					data.tu = this->getFloat();
-					data.tv = this->getFloat();
+					data.tu = this->readFLOAT();
+					data.tv = this->readFLOAT();
 					m->VertexData.push_back(data);
 				}
-				this->skipData(dwCodeSize - m->VertexCount*32);
+				this->readDATA(dwCodeSize - m->VertexCount*32);
 					  }break;
 			case 116: {
 				for(unsigned int i=0; i<m->IndexCount; i++) {
-					m->IndexData.push_back(this->getWORD());
+					m->IndexData.push_back(this->readWORD());
 				}
 					  }break;
 			case 117: {
-				m->pType = this->getDWORD();
+				m->pType = this->readDWORD();
 					  }break;
 			case 118: {
-				m->DrawVertexCount = this->getDWORD();
+				m->DrawVertexCount = this->readDWORD();
 					  }break;
 			case 119: {
-				m->DrawPrimitiveCount = this->getDWORD();
+				m->DrawPrimitiveCount = this->readDWORD();
 					  }break;
 			case 120: {
-				this->skipData(dwCodeSize);
+				this->readDATA(dwCodeSize);
 					  }break;
 			case 121: {
-				m->BoneCount = this->getDWORD();
+				m->BoneCount = this->readDWORD();
 					  }break;
-			case 122: { // gotta keep track of size read in to delete error
+			case 122: {
 				unsigned int _tSize = 0;
 				for(unsigned int b=0; b<m->BoneCount; b++) {
 					dbObject::sBoneData bone = this->getBoneData();
@@ -372,24 +356,24 @@ void CDBOConv::getMesh(dbObject::sMeshData *m) {
 				}
 
 				if(m->BoneCount == 0) {
-					this->skipData(dwCodeSize);
+					this->readDATA(dwCodeSize);
 				} else {
-					this->skipData(dwCodeSize-_tSize);
+					this->readDATA(dwCodeSize-_tSize);
 				}
 					  }break;
 			case 125: {
-				m->bUseMaterial = this->getBOOL();
+				m->bUseMaterial = this->readBOOL();
 					  }break;
 			case 126: {
 				if(m->bUseMaterial) {
 					m->mat = this->getMaterial();
-					this->skipData(dwCodeSize-(4*4*4));
+					this->readDATA(dwCodeSize-(4*4*4));
 				} else {
-					this->skipData(dwCodeSize);
+					this->readDATA(dwCodeSize);
 				}
 					  }break; 
 			case 127: {
-				m->TextureCount = this->getDWORD();
+				m->TextureCount = this->readDWORD();
 					  }break;
 			case 128: {
 				unsigned int _tSize = 0;
@@ -398,199 +382,142 @@ void CDBOConv::getMesh(dbObject::sMeshData *m) {
 					m->texture.push_back(tex);
 					_tSize += tex._tSize;
 				}
-				if(m->TextureCount == 0) { this->skipData(dwCodeSize); } else { 
-					this->skipData(dwCodeSize-_tSize);
+				if(m->TextureCount == 0) { this->readDATA(dwCodeSize); } else { 
+					this->readDATA(dwCodeSize-_tSize);
 				}
 					  }break;
 			case 140: {
-				m->bVisible = this->getBOOL();
+				m->bVisible = this->readBOOL();
 					  }break;
 			case 129: {
-				m->bWireframe = this->getBOOL();
+				m->bWireframe = this->readBOOL();
 					  }break;
 			case 130: {
-				m->bLight = this->getBOOL();
+				m->bLight = this->readBOOL();
 					  }break;
 			case 131: {
-				m->bCull = this->getBOOL();
+				m->bCull = this->readBOOL();
 					  }break;
 			case 132: {
-				m->bFog = this->getBOOL();
+				m->bFog = this->readBOOL();
 					  }break;
 			case 133: {
-				m->bAmbient = this->getBOOL();
+				m->bAmbient = this->readBOOL();
 					  }break;
 			case 134: {
-				m->bTransparency = this->getBOOL();
+				m->bTransparency = this->readBOOL();
 					  }break;
 			case 135: {
-				m->bGhost = this->getBOOL();
+				m->bGhost = this->readBOOL();
 					  }break;
 			case 136: {
-				m->GhostMode = this->getDWORD();
+				m->GhostMode = this->readDWORD();
 					  }break;
 			case 123: {
-				m->bUseMultipleMaterials = this->getBOOL();
+				m->bUseMultipleMaterials = this->readBOOL();
 					  }break;
 			case 124: {
-				m->MaterialCount = this->getDWORD();
+				m->MaterialCount = this->readDWORD();
 					  }break;
 			case 139: {
 				for(unsigned int _m=0; _m<m->MaterialCount; _m++) {
 					m->mmaterial.push_back(this->getMMaterial());
 				}
 				if(m->MaterialCount == 0) {
-					this->skipData(dwCodeSize);
+					this->readDATA(dwCodeSize);
 				}
 					  }break;
 			case 154: {
-				m->effectname = this->getString(this->getDWORD());
+				m->effectname = this->readSTRING(this->readDWORD());
 					  }break;
 			case 155: {
-				this->skipData(dwCodeSize);
+				this->readDATA(dwCodeSize);
 					  }break;
 			case 156: {
-				this->skipData(dwCodeSize);
+				this->readDATA(dwCodeSize);
 					  }break;
 			case 157: {
-				this->skipData(dwCodeSize);
+				this->readDATA(dwCodeSize);
 					  }break;
 			case 158: {
-				this->skipData(dwCodeSize);
+				this->readDATA(dwCodeSize);
 					  }break;
 			case 159: {
-				this->skipData(dwCodeSize);
+				this->readDATA(dwCodeSize);
 					  }break;
 			case 160: {
-				this->skipData(dwCodeSize);
+				this->readDATA(dwCodeSize);
 					  }break;
 			case 166: {
-				this->skipData(dwCodeSize);
+				this->readDATA(dwCodeSize);
 					  }break;
-			default: { 
-				//skip data (dwCodeSize)
-				this->skipData(dwCodeSize);
+			default: {
+				this->readDATA(dwCodeSize);
 					 }break;
 		}
-		dwCode = this->getDWORD();
-		dwCodeSize = this->getDWORD();
+		dwCode = this->readDWORD();
+		dwCodeSize = this->readDWORD();
 	}
 }
 
-void CDBOConv::getFrame(dbObject::sFrame *frame) {
+void CDBOConv::getFrame() {
+	this->obj->_cFrames++;
 	std::cout << "  > reading a frame" <<  std::endl;
-	int dwCode = this->getDWORD();
-	int dwCodeSize = this->getDWORD();
+	int dwCode = this->readDWORD();
+	int dwCodeSize = this->readDWORD();
 	while( dwCode > 0 ) {
 		switch(dwCode) {
-		case 101: { //frame name
-			frame->name = this->getString(this->getDWORD());
+		case 101: {
+			obj->oFrame->bGood = true;
+			obj->oFrame->name = this->readSTRING(this->readDWORD());
 				  }break;
-		case 102: { //frame matrix
+		case 102: {
 			for(int x=0; x<4; x++) {
 				for(int y=0; y<4; y++) {
-					frame->matrix[x][y] = (float)this->getDWORD();
+					obj->oFrame->matrix[x][y] = (float)this->readDWORD();
 				}
 			}
 				  }break;
 		case 103: {
-			frame->m = new dbObject::sMeshData();
-			this->getMesh(frame->m);
+			obj->oFrame->m = new dbObject::sMeshData();
+			this->getMesh(obj->oFrame->m);
 				  }break;
 		case 104: {
-			std::cout << " ";
-			frame->child = new dbObject::sFrame();
-			this->getFrame(frame->child);
+			obj->oFrame->child = new dbObject::sFrame();
+			obj->oFrame = obj->oFrame->child;
+			this->getFrame();
 				  }break;
 		case 105: {
-			std::cout << " ";
-			frame->sibling= new dbObject::sFrame();
-			this->getFrame(frame->sibling);
+			obj->oFrame->sibling= new dbObject::sFrame();
+			obj->oFrame = obj->oFrame->sibling;
+			this->getFrame();
 				  }break;
 		case 106: {
-			frame->offset[0] = this->getFloat();
-			frame->offset[1] = this->getFloat();
-			frame->offset[2] = this->getFloat();
+			obj->oFrame->offset[0] = this->readFLOAT();
+			obj->oFrame->offset[1] = this->readFLOAT();
+			obj->oFrame->offset[2] = this->readFLOAT();
 				  }break;
 		case 107: {
-			frame->rot[0] = this->getFloat();
-			frame->rot[1] = this->getFloat();
-			frame->rot[2] = this->getFloat();
+			obj->oFrame->rot[0] = this->readFLOAT();
+			obj->oFrame->rot[1] = this->readFLOAT();
+			obj->oFrame->rot[2] = this->readFLOAT();
 				  }break;
 		case 108: {
-			frame->scale[0] = this->getFloat();
-			frame->scale[1] = this->getFloat();
-			frame->scale[2] = this->getFloat();
+			obj->oFrame->scale[0] = this->readFLOAT();
+			obj->oFrame->scale[1] = this->readFLOAT();
+			obj->oFrame->scale[2] = this->readFLOAT();
 				  }break;
 		default: {
-			//skip data
-			this->skipData(dwCodeSize);
+			this->readDATA(dwCodeSize);
 				 }break;
 		}
 
-		dwCode = this->getDWORD();
-		dwCodeSize = this->getDWORD();
-	}
-}
-
-void CDBOConv::getRootFrame() {
-	std::cout << " > reading root " << std::endl;
-	int dwCode = this->getDWORD();
-	int dwCodeSize = this->getDWORD();
-	obj->root = new dbObject::sFrame();
-	while(dwCode > 0) {
-		switch(dwCode) {
-		case 101: { //frame name
-			obj->root->name = this->getString(this->getDWORD());
-				  }break;
-		case 102: { //frame matrix
-			for(int x=0; x<4; x++) {
-				for(int y=0; y<4; y++) {
-					obj->root->matrix[x][y] = (float)this->getDWORD();
-				}
-			}
-				  }break;
-		case 103: {
-			obj->root->m = new dbObject::sMeshData();
-			this->getMesh(obj->root->m);
-				  }break;
-		case 104: {
-			obj->root->child = new dbObject::sFrame();
-			this->getFrame(obj->root->child);
-				  }break;
-		case 105: {
-			obj->root->sibling= new dbObject::sFrame();
-			this->getFrame(obj->root->sibling);
-				  }break;
-		case 106: {
-			obj->root->offset[0] = this->getFloat();
-			obj->root->offset[1] = this->getFloat();
-			obj->root->offset[2] = this->getFloat();
-				  }break;
-		case 107: {
-			obj->root->rot[0] = this->getFloat();
-			obj->root->rot[1] = this->getFloat();
-			obj->root->rot[2] = this->getFloat();
-				  }break;
-		case 108: {
-			obj->root->scale[0] = this->getFloat();
-			obj->root->scale[1] = this->getFloat();
-			obj->root->scale[2] = this->getFloat();
-				  }break;
-		default: {
-			//skip data
-			this->skipData(dwCodeSize);
-				 }break;
-		}
-
-		dwCode = this->getDWORD();
-		dwCodeSize = this->getDWORD();
+		dwCode = this->readDWORD();
+		dwCodeSize = this->readDWORD();
 	}
 }
 
 void CDBOConv::clean() {
-	/* this ain't cleaning, can't be bothered */
-	delete obj->root;
 	delete obj;
 	file.close();
 	std::cout << "> memory cleared" << std::endl << "  > file closed " << std::endl << "* the end *" << std::endl; 
@@ -598,7 +525,6 @@ void CDBOConv::clean() {
 
 bool CDBOConv::open(std::string path) {
 	file.open((char*)path.c_str(), std::ios::in|std::ios::binary);
-
 	return file.is_open();
 }
 
@@ -606,7 +532,41 @@ bool CDBOConv::good() {
 	return file.is_open();
 }
 
-std::string CDBOConv::getString(unsigned int size) {
+void CDBOConv::saveto(std::string path) {
+	std::string oformat = path.substr(path.find_last_of("."),path.size()-path.find_last_of("."));
+	bool _known = false;
+	
+	if(oformat == ".irrmesh") {
+		_known = true;
+
+		//Create & Convert
+		nsIrrMesh::CIrrMesh *irrmesh = new nsIrrMesh::CIrrMesh(this, path);
+		irrmesh->init();
+		std::cout << " > saving to output format: " << oformat << std::endl;
+		if(irrmesh->ready()) {
+			irrmesh->setMeshVersion("http://irrlicht.sourceforge.net/IRRMESH_09_2007","1.0");
+			
+			std::cout << "  > found " << irrmesh->getBufferCount() << " buffers" << std::endl;
+			irrmesh->addBuffer(this->obj->root);
+
+			irrmesh->addEnd("mesh");
+		} else {
+			std::cout << " > could not open <" << path << "> to write " << std::endl;
+		}
+	}
+
+	if(_known == false) {
+		std::cout << " > saving: " << oformat << " is unknown" << std::endl;
+	} else {
+		std::cout << " > saving to <" << path << "> is done" << std::endl;
+	}
+}
+
+dbObject::object *CDBOConv::getObj() {
+	return obj;
+}
+
+std::string CDBOConv::readSTRING(unsigned int size) {
 	std::string buffer;
 	for(unsigned int n = 0; n < size; n++) {
 		char c[1];
@@ -620,39 +580,150 @@ std::string CDBOConv::getString(unsigned int size) {
 	return std::string(buffer).substr(0,size);
 }
 
-void CDBOConv::skipData(unsigned int size) {
+void CDBOConv::readDATA(unsigned int size) {
 	for(unsigned int n = 0; n < size; n++) {
 		char c[1];
 		file.read(c, 1);
 	}
 }
 
-float CDBOConv::getFloat() {
+float CDBOConv::readFLOAT() {
 	float temp = 0.0f;
 	file.read(reinterpret_cast<char*>(&temp),sizeof(temp));
 	return temp;
 }
  
-int CDBOConv::getInteger() {
+int CDBOConv::readINTEGER() {
 	int temp = 0;
 	file.read(reinterpret_cast<char*>(&temp),sizeof(temp));
 	return temp;
 }
 
-DWORD CDBOConv::getDWORD() {
+DWORD CDBOConv::readDWORD() {
 	DWORD temp = NULL;
 	file.read(reinterpret_cast<char*>(&temp),sizeof(DWORD));
 	return temp;
 }
 
-WORD CDBOConv::getWORD() {
+WORD CDBOConv::readWORD() {
 	WORD temp = NULL;
 	file.read(reinterpret_cast<char*>(&temp),sizeof(WORD));
 	return temp;
 }
 
-bool CDBOConv::getBOOL() {
+bool CDBOConv::readBOOL() {
 	bool temp = false;
 	file.read(reinterpret_cast<char*>(&temp),sizeof(bool));
 	return temp;
+}
+
+//.irrmesh Output Class Definition
+nsIrrMesh::CIrrMesh::CIrrMesh(CDBOConv *that, std::string path) {
+	src = that;
+	ofile.open(path);
+}
+
+bool nsIrrMesh::CIrrMesh::ready() {
+	return (ofile.good() && src != NULL);
+}
+
+unsigned int nsIrrMesh::CIrrMesh::getBufferCount() {
+	return this->src->getObj()->_cFrames;
+}
+
+void nsIrrMesh::CIrrMesh::setMeshVersion(std::string _namespace, std::string version) {
+	ofile << "<mesh xmlns=\"" << _namespace << "\" version=\"" << version << "\">" << std::endl;
+}
+
+void nsIrrMesh::CIrrMesh::setBoundingBox(float min[3],float max[3]) {
+	ofile << "<boundingBox minEdge=\"" << min[0] << min[1] << min[2] << "\" maxEdge=\"" << max[0] << max[1] << max[2] << "/>" << std::endl;
+}
+
+void nsIrrMesh::CIrrMesh::init() {
+	ofile.precision(5); 
+	ofile << std::fixed;
+	ofile << "<?xml version=\"1.0\"?>" << std::endl;
+}
+
+void nsIrrMesh::CIrrMesh::addEnd(std::string tag) {
+	ofile << "</" << tag << ">" << std::endl;
+}
+
+void nsIrrMesh::CIrrMesh::addBuffer(dbObject::sFrame *next) { //left right tree search check and write
+	dbObject::sFrame *temp = next;
+	while(temp != NULL) {		
+		if(temp->good()) {
+			ofile << "<buffer>" << std::endl;
+				ofile << "<boundingBox minEdge=\"-100.000000 -100.000000 -100.000000\" maxEdge=\"100.000000 100.000000 100.000000\" />" << std::endl;
+				ofile << "<material>" << std::endl;
+					ofile << "<enum name=\"Type\" value=\"solid\" />" << std::endl;
+					ofile << "<color name=\"Ambient\" value=\"ffffffff\" />" << std::endl;
+					ofile << "<color name=\"Diffuse\" value=\"ffffffff\" />" << std::endl;
+					ofile << "<color name=\"Emissive\" value=\"00000000\" />" << std::endl;
+					ofile << "<color name=\"Specular\" value=\"ffffffff\" />" << std::endl;
+					ofile << "<float name=\"Shininess\" value=\"0.000000\" />" << std::endl;
+					ofile << "<float name=\"Param1\" value=\"0.000000\" />" << std::endl;
+					ofile << "<float name=\"Param2\" value=\"0.000000\" />" << std::endl;
+					for(unsigned int tc=0; tc<(unsigned int)temp->m->TextureCount; tc++) {
+						ofile << "<texture name=\"Texture"<< tc+1 <<"\" value=\"" << temp->m->texture[tc].name << "\" />" << std::endl;
+					}
+					ofile << "<bool name=\"Wireframe\" value=\"" << "false" << "\" />" << std::endl;
+					ofile << "<bool name=\"GouraudShading\" value=\"true\" />" << std::endl;
+					ofile << "<bool name=\"Lighting\" value=\"true\" />" << std::endl;
+					ofile << "<bool name=\"ZWriteEnable\" value=\"true\" />" << std::endl;
+					ofile << "<int name=\"ZBuffer\" value=\"1\" />" << std::endl;
+					ofile << "<bool name=\"BackfaceCulling\" value=\"true\" />" << std::endl;
+					ofile << "<bool name=\"FrontfaceCulling\" value=\"false\" />" << std::endl;
+					ofile << "<bool name=\"FogEnable\" value=\"false\" />" << std::endl;
+					ofile << "<bool name=\"NormalizeNormals\" value=\"false\" />" << std::endl;
+					ofile << "<int name=\"AntiAliasing\" value=\"5\" />" << std::endl;
+					ofile << "<int name=\"ColorMask\" value=\"15\" />" << std::endl;
+					ofile << "<bool name=\"BilinearFilter1\" value=\"true\" />" << std::endl;
+					ofile << "<bool name=\"BilinearFilter2\" value=\"true\" />" << std::endl;
+					ofile << "<bool name=\"BilinearFilter3\" value=\"true\" />" << std::endl;
+					ofile << "<bool name=\"BilinearFilter4\" value=\"true\" />" << std::endl;
+					ofile << "<bool name=\"TrilinearFilter1\" value=\"false\" />" << std::endl;
+					ofile << "<bool name=\"TrilinearFilter2\" value=\"false\" />" << std::endl;
+					ofile << "<bool name=\"TrilinearFilter3\" value=\"false\" />" << std::endl;
+					ofile << "<bool name=\"TrilinearFilter4\" value=\"false\" />" << std::endl;
+					ofile << "<int name=\"AnisotropicFilter1\" value=\"0\" />" << std::endl;
+					ofile << "<int name=\"AnisotropicFilter2\" value=\"0\" />" << std::endl;
+					ofile << "<int name=\"AnisotropicFilter3\" value=\"0\" />" << std::endl;
+					ofile << "<int name=\"AnisotropicFilter4\" value=\"0\" />" << std::endl;
+					ofile << "<enum name=\"TextureWrap1\" value=\"texture_clamp_repeat\" />" << std::endl;
+					ofile << "<enum name=\"TextureWrap2\" value=\"texture_clamp_repeat\" />" << std::endl;
+					ofile << "<enum name=\"TextureWrap3\" value=\"texture_clamp_repeat\" />" << std::endl;
+					ofile << "<enum name=\"TextureWrap4\" value=\"texture_clamp_repeat\" />" << std::endl;
+					ofile << "<int name=\"LODBias1\" value=\"0\" />" << std::endl;
+					ofile << "<int name=\"LODBias2\" value=\"0\" />" << std::endl;
+					ofile << "<int name=\"LODBias3\" value=\"0\" />" << std::endl;
+					ofile << "<int name=\"LODBias4\" value=\"0\" />" << std::endl;
+				ofile << "</material>" << std::endl;
+				ofile << "<vertices type=\"standard\" vertexCount=\"" << temp->m->VertexCount << "\">" << std::endl;
+				for(unsigned int v=0; v<temp->m->VertexCount; v++) {
+					ofile << temp->m->VertexData[v].x << " " << temp->m->VertexData[v].y << " " << temp->m->VertexData[v].z << " " << temp->m->VertexData[v].nx << " " << temp->m->VertexData[v].ny << " " << temp->m->VertexData[v].nz << " " << "64ffffff" << " " << temp->m->VertexData[v].tu << " " << temp->m->VertexData[v].tv << std::endl;
+				}
+				ofile << std::endl << "</vertices>" << std::endl;
+				
+				if(temp->m->IndexCount == 0) {
+					ofile << "<indices indexCount=\"" << temp->m->VertexCount << "\">" << std::endl;
+					for(unsigned int i=0; i<temp->m->VertexCount; i++) {
+						ofile << i << " ";
+					}
+				} else {
+					ofile << "<indices indexCount=\"" << temp->m->IndexCount << "\">" << std::endl;
+					for(unsigned int i=0; i<temp->m->IndexCount; i++) {
+						ofile << temp->m->IndexData[i] << " ";
+					} 
+				}
+				ofile << std::endl << "</indices>" << std::endl;
+			ofile << "</buffer>" << std::endl;
+		}
+		
+		addBuffer(temp->child);
+		addBuffer(temp->sibling);
+		//The idea was that it would automatically also clean walked branches, Maybe do this at the end? Debatable.
+		delete temp;
+		temp = NULL;
+	}
 }
